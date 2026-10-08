@@ -72,6 +72,9 @@ input:focus{border-color:#8b5cf6}
 .set label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:700;color:var(--mute)}
 .mg{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:14px}
 .mg b{text-align:center;font-size:12px;color:var(--mute);padding:4px 0}
+.eb{flex:none;width:46px;border:2px solid var(--line);border-radius:14px;background:var(--bg);font-size:24px;padding:0}
+.pk{padding:0 12px 14px}.eg{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}.eg button{border:0;background:var(--bg);border-radius:10px;font-size:22px;padding:6px 0}.pk input{width:100%;margin-top:8px}
+.chip i[data-a]{outline:2px dashed #8b5cf6;border-radius:8px}
 .cell{border:2px solid transparent;border-radius:14px;background:var(--card);color:var(--ink);min-height:60px;padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(80,50,140,.1)}
 .cell i{font-style:normal;font-size:13px;font-weight:800}.cell span{font-size:12px;font-weight:800}
 .cell.off{opacity:.4}.cell.now{border-color:#8b5cf6}
@@ -91,6 +94,7 @@ const MN=['Ιανουάριος','Φεβρουάριος','Μάρτιος','Απ
 const MS=['Ιαν','Φεβ','Μαρ','Απρ','Μαΐ','Ιουν','Ιουλ','Αυγ','Σεπ','Οκτ','Νοε','Δεκ'];
 const MAP=[['καφ','☕'],['φαγ|σουβλ|γευμ|μεσημ','🍝'],['super|σουπερ|ψων','🛒'],['βενζιν|καυσιμ','⛽'],['μπυρ|ποτο|μπαρ','🍺'],['delivery|διανομ','🛵'],['εισιτ|λεωφ|ταξι','🚌'],['τσιγ','🚬'],['γυμν','💪']];
 const DEF=[['Καφές','☕',2.5],['Φαγητό','🍝',8],['Σουβλάκι','🌯',4],['Snack','🥐',2],['Super market','🛒',20],['Βενζίνη','⛽',30],['Ποτό','🍺',5],['Delivery','🛵',12],['Εισιτήριο','🚌',1.2]].map((x,i)=>({id:'c'+i,n:x[0],e:x[1],p:x[2]}));
+const EMS='☕ 🍵 🥐 🍞 🍕 🍔 🌯 🍝 🍣 🥗 🍦 🍰 🍫 🍿 🍺 🍷 🥂 🍹 🛒 🥦 🍎 🥩 🧴 🧻 ⛽ 🚌 🚕 🚗 🚲 ✈️ 🏨 🅿️ 🎬 🎮 🎧 🎁 📚 💊 🩺 🦷 💇 👕 👟 👜 💄 📱 💻 🔌 💡 💧 🏠 🧺 🐶 🐱 👶 🚬 💪 ⚽ 🎟️ 💸 🧾'.split(' ');
 const pad=n=>String(n).padStart(2,'0'),K=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const parse=k=>{const[y,m,d]=k.split('-');return new Date(+y,m-1,+d)};
 const wd=d=>(d.getDay()+6)%7,addD=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x},mon=d=>addD(d,-wd(d));
@@ -104,7 +108,7 @@ const now=new Date();now.setHours(0,0,0,0);
 let S={cat:DEF,inc:0,goal:0,x:{}};try{Object.assign(S,JSON.parse(localStorage.getItem('expenses-v1'))||{})}catch(e){}
 const save=()=>{try{localStorage.setItem('expenses-v1',JSON.stringify(S))}catch(e){}};
 const main=document.getElementById('main');
-let V='d',cur=new Date(now),E=false,SET=false;
+let V='d',cur=new Date(now),E=false,SET=false,NE=null,P=null,DN='',DP='';
 const tot=k=>(S.x[k]||[]).reduce((s,e)=>s+e.p*e.q,0);
 const dim=d=>new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
 const dayBud=d=>S.inc?Math.max(0,S.inc-S.goal)/dim(d):0;
@@ -114,8 +118,9 @@ function mstat(d){const n=dim(d),y=d.getFullYear(),m=d.getMonth();let e=0;for(le
 const li=x=>`<li data-id="${x.id}"><span class="em">${x.e}</span><span class="tx">${esc(x.n)}<small>${eur(x.p)}</small></span><div class="stp"><button data-a="dn" aria-label="Λιγότερο">−</button><b>${x.q}</b><button data-a="up" aria-label="Περισσότερο">+</button></div><span class="pr">${eur(x.p*x.q)}</span></li>`;
 function day(){const k=K(cur),a=S.x[k]||[],t=tot(k),w=WD[wd(cur)],B=dayBud(cur);let lim='';
   if(B){const l=B-t;lim=`<div class="lm ${l<0?'r':'g'}">${l<0?'Ξεπέρασες το όριο κατά '+eur(-l):'Όριο ημέρας '+eur(B)+' · έμειναν '+eur(l)}</div>`}
-  const chips=S.cat.map(c=>{const x=a.find(y=>y.i==c.id);return`<button class="chip" data-a="ch" data-id="${c.id}"><i>${c.e}</i><span>${esc(c.n)}</span><u>${eur(c.p)}</u>${x&&!E?`<em>${x.q}</em>`:''}${E?`<s data-a="rc" data-id="${c.id}">✕</s>`:''}</button>`}).join('');
-  return`<section class="card" style="--h:${w.h}"><div class="hd"><div><h2>${w.n}</h2><small>${cur.getDate()} ${MS[cur.getMonth()]}${K(cur)==K(now)?' · σήμερα':''}</small></div><div class="big">${eur(t)}</div></div>${lim}<ul class="list">${a.map(li).join('')||'<li class="empty">Κανένα έξοδο ακόμα 🎉<br>Διάλεξε μια επιλογή παρακάτω</li>'}</ul><div class="tot"><span>Σύνολο ημέρας</span><span>${eur(t)}</span></div><div class="sub"><span>Πρόσθεσε έξοδο</span><button data-a="ed">${E?'Τέλος':'✏️ Επεξεργασία'}</button></div>${E?'<div class="nt">Πάτα μια επιλογή για να αλλάξεις την τιμή ή το ✕ για διαγραφή.</div>':''}<div class="ch">${chips}</div><div class="add"><input id="nn" maxlength="30" placeholder="Νέα επιλογή" autocomplete="off"><input id="np" inputmode="decimal" placeholder="€" autocomplete="off"><button class="plus" data-a="add" aria-label="Προσθήκη">+</button></div></section>`}
+  const chips=S.cat.map(c=>{const x=a.find(y=>y.i==c.id);return`<button class="chip" data-a="ch" data-id="${c.id}"><i${E?` data-a="ce" data-id="${c.id}"`:''}>${c.e}</i><span>${esc(c.n)}</span><u>${eur(c.p)}</u>${x&&!E?`<em>${x.q}</em>`:''}${E?`<s data-a="rc" data-id="${c.id}">✕</s>`:''}</button>`}).join('');
+  return`<section class="card" style="--h:${w.h}"><div class="hd"><div><h2>${w.n}</h2><small>${cur.getDate()} ${MS[cur.getMonth()]}${K(cur)==K(now)?' · σήμερα':''}</small></div><div class="big">${eur(t)}</div></div>${lim}<ul class="list">${a.map(li).join('')||'<li class="empty">Κανένα έξοδο ακόμα 🎉<br>Διάλεξε μια επιλογή παρακάτω</li>'}</ul><div class="tot"><span>Σύνολο ημέρας</span><span>${eur(t)}</span></div><div class="sub"><span>Πρόσθεσε έξοδο</span><button data-a="ed">${E?'Τέλος':'✏️ Επεξεργασία'}</button></div>${E?'<div class="nt">Πάτα μια επιλογή για να αλλάξεις την τιμή ή το ✕ για διαγραφή.</div>':''}<div class="ch">${chips}</div><div class="add"><button class="eb" data-a="pk" aria-label="Διάλεξε emoji">${NE||'🙂'}</button><input id="nn" maxlength="30" placeholder="Νέα επιλογή" autocomplete="off" value="${esc(DN)}"><input id="np" inputmode="decimal" placeholder="€" autocomplete="off" value="${esc(DP)}"><button class="plus" data-a="add" aria-label="Προσθήκη">+</button></div>${P?picker():''}</section>`}
+const picker=()=>`<div class="pk"><div class="eg">${EMS.map(e=>`<button data-a="pe" data-e="${e}">${e}</button>`).join('')}</div><input id="ei" placeholder="ή γράψε το δικό σου emoji" autocomplete="off"></div>`;
 function stats(){const s=mstat(cur),bud=Math.max(0,s.inc-s.goal),p=bud?Math.min(100,s.e/bud*100):0,left=s.inc-s.e,sv=s.inc-s.proj,ok=sv>=s.goal;
   let h=`<section class="card" style="--h:262"><div class="hd"><div><h2>${MN[cur.getMonth()]}</h2><small>Σύνολο μήνα</small></div><button class="gear" data-a="set" aria-label="Ρυθμίσεις">⚙️</button></div><div class="sg"><div><u>Έξοδα</u><b>${eur(s.e)}</b></div>${s.inc?`<div><u>Έμειναν</u><b class="${left<0?'r':'g'}">${eur(left)}</b></div>`:''}${s.inc&&s.el?`<div><u>Αποταμίευση</u><b class="${ok?'g':'r'}">${eur(sv)}</b></div>`:''}</div>`;
   if(bud)h+=`<div class="pb"><u style="width:${p}%;${s.e>bud?'background:var(--bad)':''}"></u></div><div class="nt">Διαθέσιμα για έξοδα: ${eur(bud)} (εισόδημα − στόχος)</div>`;
@@ -130,17 +135,21 @@ function month(){const s=mon(new Date(cur.getFullYear(),cur.getMonth(),1)),B=day
 function render(reset){const sc=main.scrollTop;
   main.innerHTML=V=='d'?day()+stats():stats()+month();
   main.scrollTop=reset?0:sc;
+  if(P){const q=main.querySelector('.pk');if(q)q.scrollIntoView({block:'nearest'})}
   document.getElementById('tt').textContent=V=='d'?WD[wd(cur)].n:MN[cur.getMonth()];
   const s=mstat(cur);
   document.getElementById('st').textContent=(V=='d'?`${cur.getDate()} ${MN[cur.getMonth()]} ${cur.getFullYear()}`:cur.getFullYear())+(s.e?` · ${eur(s.e)} τον μήνα`:'');
   document.querySelectorAll('.seg button').forEach(b=>b.classList.toggle('on',b.dataset.v==V))}
 function nav(n){if(V=='d')cur=addD(cur,n);else{const d=new Date(cur.getFullYear(),cur.getMonth()+n,1);cur=d.getMonth()==now.getMonth()&&d.getFullYear()==now.getFullYear()?new Date(now):d}render(1)}
 function addNew(){const n=document.getElementById('nn').value.trim(),p=num(document.getElementById('np').value);if(!n||!(p>=0))return;
-  const[e,t]=emo(n),c={id:uid(),n:t,e,p};S.cat.push(c);(S.x[K(cur)]=S.x[K(cur)]||[]).push({id:uid(),i:c.id,n:t,e,p,q:1});save();render()}
+  const[ae,t]=emo(n),e=NE||ae,c={id:uid(),n:t,e,p};NE=null;P=null;DN='';DP='';S.cat.push(c);(S.x[K(cur)]=S.x[K(cur)]||[]).push({id:uid(),i:c.id,n:t,e,p,q:1});save();render()}
 main.addEventListener('click',ev=>{const b=ev.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,k=K(cur),arr=S.x[k]=S.x[k]||[];
   if(a=='open'){cur=parse(b.dataset.k);V='d';return render(1)}
   if(a=='set'){SET=!SET;return render()}
   if(a=='ed'){E=!E;return render()}
+  if(a=='pk'){P=P=='new'?null:'new';return render()}
+  if(a=='ce'){P=b.dataset.id;return render()}
+  if(a=='pe')return setEmo(b.dataset.e);
   if(a=='add')return addNew();
   if(a=='rc'){if(confirm('Διαγραφή αυτής της επιλογής από τη λίστα; (τα έξοδα που έχεις ήδη γράψει μένουν)'))S.cat=S.cat.filter(x=>x.id!=b.dataset.id)}
   else if(a=='ch'){const c=S.cat.find(x=>x.id==b.dataset.id);
@@ -149,7 +158,9 @@ main.addEventListener('click',ev=>{const b=ev.target.closest('[data-a]');if(!b)r
   else{const id=b.closest('li').dataset.id,i=arr.findIndex(x=>x.id==id);
     if(a=='up')arr[i].q++;else if(--arr[i].q<=0)arr.splice(i,1)}
   save();render()});
-main.addEventListener('change',e=>{if(e.target.id=='inc'){S.inc=num(e.target.value)||0;save();render()}if(e.target.id=='goal'){S.goal=num(e.target.value)||0;save();render()}});
+function setEmo(e){if(P=='new')NE=e;else{const c=S.cat.find(x=>x.id==P);if(c){c.e=e;for(const d in S.x)S.x[d].forEach(x=>{if(x.i==c.id)x.e=e})}}P=null;save();render()}
+main.addEventListener('input',e=>{if(e.target.id=='nn')DN=e.target.value;if(e.target.id=='np')DP=e.target.value});
+main.addEventListener('change',e=>{if(e.target.id=='ei'){const m=e.target.value.match(/\p{Extended_Pictographic}\uFE0F?/u);if(m)setEmo(m[0])}if(e.target.id=='inc'){S.inc=num(e.target.value)||0;save();render()}if(e.target.id=='goal'){S.goal=num(e.target.value)||0;save();render()}});
 main.addEventListener('keydown',e=>{if(e.key=='Enter'&&(e.target.id=='nn'||e.target.id=='np'))addNew()});
 document.getElementById('pv').onclick=()=>nav(-1);
 document.getElementById('nx').onclick=()=>nav(1);
